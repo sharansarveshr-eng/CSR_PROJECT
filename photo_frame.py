@@ -192,7 +192,7 @@ class EInkPhotoFrame:
             d_data = None
             w_data = None
             
-            max_retries = 10  # 10회 * 2초 = 최대 20초 대기
+            max_retries = 2  # 빠른 렌더링을 위해 최대 2회만 시도
             for i in range(max_retries):
                 logger.info(f"Fetching weather/dust data (Attempt {i+1}/{max_retries})...")
                 if d_data is None:
@@ -204,7 +204,7 @@ class EInkPhotoFrame:
                     logger.info("Both weather and dust data successfully fetched.")
                     break
                 
-                time.sleep(2)
+                time.sleep(1)
             
             if not d_data: logger.warning("Fine dust data fetch failed after retries.")
             if not w_data: logger.warning("Weather data fetch failed after retries.")
