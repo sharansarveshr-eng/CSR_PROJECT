@@ -13,6 +13,7 @@ import threading
 # Use project settings
 import settings
 import data_api
+import immich_api
 import renderer # Use renderer to create composed image
 import hardware # Use existing hardware controller wrapper if compatible
 # But user code imports waveshare directly in try/except.
@@ -299,15 +300,23 @@ class EInkPhotoFrame:
         if target_photo:
              selected_photo = target_photo
              logger.info(f"🎯 Forced display of photo: {os.path.basename(selected_photo)}")
-        elif pinned_photo:
+        else:
+             # [Immich Favorites Mode]
+             immich_cfg = self.config.get('immich', {})
+             if immich_cfg.get('enabled', False):
+                 logger.info("❤️ Immich 즐겨찾기 사진 로드 시도 중...")
+                 immich_photo = immich_api.get_random_favorite_photo(self.config)
+                 if immich_photo and os.path.exists(immich_photo):
+                     selected_photo = immich_photo
+                     logger.info(f"✨ Immich 즐겨찾기 사진 선정 완료: {selected_photo}")
+
+        if not selected_photo and pinned_photo:
             full_path = os.path.join(self.photos_dir, pinned_photo)
             logger.info(f"Checking pinned photo path: {full_path}")
             if os.path.exists(full_path):
                 selected_photo = full_path
                 logger.info(f"✅ Found pinned photo: {full_path}")
             else:
-                # Try checking if it's just a filename that needs to be found in uploads
-                # Sometimes path might be mixed up
                 logger.warning(f"❌ Pinned photo NOT found at: {full_path}")
                 
         if not selected_photo:
