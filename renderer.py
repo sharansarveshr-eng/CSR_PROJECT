@@ -311,33 +311,35 @@ def create_composed_image(image_path, weather_data, dust_data, layout_config=Non
         summary_widget = create_daily_summary_widget(weather_data)
         if summary_widget:
             rx = 20 
-            ry = DISPLAY_HEIGHT - 80 - 20
+            ry = DISPLAY_HEIGHT - 36 - 15
             final_image.paste(summary_widget, (rx, ry), summary_widget)
 
-    # [Battery Low Widget Composite]
+    # [Top-Left Compact Battery Indicator]
     if batt_info:
-        batt_widget = create_battery_alert_widget(batt_info)
-        if batt_widget:
-            # Place above Rain Widget or at bottom if no rain widget
-            # Let's stack them or place in similar spot (Rain check might already trigger)
-            # If both exist, maybe stack?
-            # For now, put it slightly higher if RAIN exists? Or just override.
-            # Let's put it on the LEFT bottom, similar to rain.
-            # If Rain exists, move Battery UP?
-            has_summary = (weather_data and create_daily_summary_widget(weather_data) is not None)
-            
-            bx = 20
-            by = DISPLAY_HEIGHT - 100 - 20
-            if has_summary:
-                by -= (80 + 10) # Move up by widget height + margin
-                
-            final_image.paste(batt_widget, (bx, by), batt_widget)
-            
+        level = batt_info.get('level', 100)
+        charging = batt_info.get('charging', False)
+        batt_icon = "⚡" if charging else ("🪫" if level < 20 else "🔋")
+        batt_text = f"{batt_icon} {int(level)}%"
+        
+        font_batt = get_font(12, bold=True)
+        bw_text = font_batt.getlength(batt_text)
+        bh_text = font_batt.getbbox(batt_text)[3]
+        
+        bw = int(bw_text + 16)
+        bh = 24
+        bx, by = 20, 20
+        
+        batt_overlay = Image.new('RGBA', (DISPLAY_WIDTH, DISPLAY_HEIGHT), (255, 255, 255, 0))
+        bdraw = ImageDraw.Draw(batt_overlay)
+        bdraw.rounded_rectangle([bx, by, bx + bw, by + bh], radius=10, fill=(255, 255, 255, 180))
+        bdraw.text((bx + 8, by + (bh - bh_text) // 2 - 1), batt_text, font=font_batt, fill=(40, 40, 40))
+        final_image = Image.alpha_composite(final_image.convert('RGBA'), batt_overlay).convert('RGB')
+
     return final_image, box_x, box_y, box_w, box_h
 
 def create_daily_summary_widget(weather_data):
     """
-    Creates a dedicated bottom widget for daily summary and rain alerts.
+    Creates a compact, slim bottom widget for daily summary and rain alerts.
     """
     if not weather_data:
         return None
@@ -373,34 +375,25 @@ def create_daily_summary_widget(weather_data):
     if not message:
         return None
         
-    # Widget Dimensions
-    w_h = 80
-    w_w = DISPLAY_WIDTH - 40 
+    # Compact Dimensions (50% 축소된 슬림 알약 배너)
+    font_small = get_font(14)
+    text_w = font_small.getlength(message)
+    text_h = font_small.getbbox(message)[3]
+    
+    w_h = 36
+    w_w = int(text_w + 30)
     
     img = Image.new('RGBA', (w_w, w_h), (255, 255, 255, 0))
     draw = ImageDraw.Draw(img)
     
-    # Background (Glass/White)
-    draw.rounded_rectangle([0, 0, w_w, w_h], radius=25, fill=(255, 255, 255, 210))
-    
-    # Text
-    font_large = get_font(30)
-    
-    # Centering
-    text_w = font_large.getlength(message)
-    
-    # Fallback to smaller font if text is too long
-    if text_w > w_w - 40:
-        font_large = get_font(26)
-        text_w = font_large.getlength(message)
-        
-    text_h = font_large.getbbox(message)[3]
+    # Background (Glass/White Pill)
+    draw.rounded_rectangle([0, 0, w_w, w_h], radius=12, fill=(255, 255, 255, 200))
     
     tx = (w_w - text_w) / 2
-    ty = (w_h - text_h) / 2 - 5 
+    ty = (w_h - text_h) / 2 - 2
     
-    # Draw Text (Dark Blue for visibility)
-    draw.text((tx, ty), message, font=font_large, fill=(20, 40, 80))
+    # Draw Text (Dark Blue for clean readability)
+    draw.text((tx, ty), message, font=font_small, fill=(20, 40, 80))
     
     return img
 
