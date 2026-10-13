@@ -1,0 +1,20 @@
+rows = 3
+cols = 3
+nnz  = 4
+
+Matrix A:
+       2      3      4
+       3      0      0
+       0      0      0
+
+x        = [0, 0, 0]
+
+CSR:
+row_ptr = [0, 3, 4, 4]
+col_idx = [0, 1, 2, 0]
+val     = [2, 3, 4, 3]
+
+Result y = A*x:
+  y[0] = 0
+  y[1] = 0
+  y[2] = 0
